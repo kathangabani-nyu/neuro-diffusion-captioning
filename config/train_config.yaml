@@ -1,0 +1,50 @@
+# Training configuration for fMRI → Caption model
+
+data:
+  nsddata_path: "/scratch/kdg7224/dynadiff/dynadiff_repo/nsddata"
+  trial_mapping_path: "/scratch/kdg7224/fmri_caption_project/data/trial_mapping.json"
+  captions_path: "/scratch/kdg7224/fmri_caption_project/data/qwen_captions.json"
+  subjects: [1, 2, 5, 7]  # NSD subject IDs
+  max_caption_length: 64
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  seed: 42
+
+model:
+  # Brain encoder
+  n_voxels: 15724
+  n_timepoints: 6
+  brain_hidden_dim: 4096
+  n_mlp_blocks: 4
+  
+  # DynaDiff checkpoint path (optional, will use pretrained weights if provided)
+  dynadiff_checkpoint_path: null  # Set to path of DynaDiff checkpoint if available
+  
+  # Caption decoder
+  embed_dim: 512  # Reduced from 768 to save memory (model was too large)
+  n_decoder_layers: 4  # Reduced from 6 to save memory
+  n_heads: 8  # Reduced from 12 to match embed_dim (must divide evenly)
+  decoder_ff_dim: null  # Will default to embed_dim * 4
+  decoder_dropout: 0.1
+  n_brain_tokens: 257
+  
+  # Tokenizer
+  tokenizer: "Qwen/Qwen2-VL-2B-Instruct"
+
+training:
+  epochs: 100
+  batch_size: 8  # Reduced to fit in GPU memory with gradient checkpointing
+  gradient_accumulation_steps: 8  # Accumulate over 8 batches = effective batch size of 64
+  use_gradient_checkpointing: true  # Enable gradient checkpointing to save memory
+  learning_rate: 1e-4
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  mixed_precision: true
+  num_workers: 8  # Increased from 4 to use more CPUs (10 allocated, leave 2 for main process)
+  prefetch_factor: 4  # Increased from 2 to prefetch more batches
+  
+  save_dir: "./checkpoints_caption"
+  save_every: 10
+
